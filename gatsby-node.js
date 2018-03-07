@@ -17,7 +17,7 @@ exports.sourceNodes = async (
   const start = Date.now()
 
   const promises = types.map(
-    ({ query = ref => ref, map = node => node, type, path }) => {
+    ({ query = ref => ref, map = async node => node, type, path }) => {
       if (!quiet) {
         console.log(`\n[Firebase Source] Fetching data for ${type}...`)
       }
@@ -34,24 +34,27 @@ exports.sourceNodes = async (
         const val = snapshot.val()
 
         Object.keys(val).forEach(key => {
-          const node = map(Object.assign({}, val[key]))
+          map(Object.assign({}, val[key]))
+            .then(node => {
+              const contentDigest = crypto
+                .createHash(`md5`)
+                .update(JSON.stringify(node))
+                .digest(`hex`)
 
-          const contentDigest = crypto
-            .createHash(`md5`)
-            .update(JSON.stringify(node))
-            .digest(`hex`)
-
-          createNode(
-            Object.assign(node, {
-              id: key,
-              parent: "root",
-              children: [],
-              internal: {
-                type: type,
-                contentDigest: contentDigest
-              }
+              createNode(
+                Object.assign(node, {
+                  id: key,
+                  parent: "root",
+                  children: [],
+                  internal: {
+                    type: type,
+                    contentDigest: contentDigest
+                  }
+                })
+              )
+            }, error => {
+              throw new Error(error)
             })
-          )
         })
       }, error => {
         throw new Error(error)
