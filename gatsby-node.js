@@ -41,7 +41,6 @@ exports.sourceNodes = async (
         const mappingNodes = Object.keys(val).map(key => (
           map(Object.assign({}, val[key]))
             .then(node => {
-              console.log('node after map', node)
               const contentDigest = crypto
                 .createHash(`md5`)
                 .update(JSON.stringify(node))
